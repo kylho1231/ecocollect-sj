@@ -101,6 +101,67 @@ rules_version = '2';
 //   - targetDocId: string (required, 1-64 chars, immutable)
 //   - details: map (optional, max keys and payload bounds)
 //
+// Collection: collectors
+// Document ID: {collectorId}
+// Fields:
+//   - employeeId: string (required, 3-50 chars, immutable) - Official MENRO personnel ID (e.g., "MENRO-COL-001")
+//   - fullName: string (required, 2-100 chars) - Collector full legal name
+//   - phone: string (required, 7-20 chars) - Mobile contact number (RA 10173 Protected PII)
+//   - assignedBarangayId: string (required, 1-50 chars) - Assigned barangay jurisdiction
+//   - assignedBarangayName: string (required, 1-100 chars) - Barangay descriptive name
+//   - assignedTruckPlate: string (required, 3-20 chars) - Assigned municipal compactor or vehicle plate
+//   - pin: string (required, 4-12 chars) - Confidential field authentication code (RA 10173 Protected)
+//   - status: string (required, enum: 'ACTIVE', 'INACTIVE', 'ON_DUTY')
+//   - createdAt: number or timestamp (required, immutable) - Record creation timestamp
+//   - lastActiveEpoch: number or timestamp (optional) - Last mobile heartbeat epoch
+//
+// Collection: trucks
+// Document ID: {truckId} (matches vehicle plate number or fleet ID, e.g., "SJB-0412")
+// Fields:
+//   - driverName: string (required, 2-100 chars) - Designated driver or crew leader
+//   - plateNumber: string (required, 3-20 chars, immutable) - Official vehicle license plate
+//   - assignedBarangayId: string (required, 1-50 chars) - Target barangay routing jurisdiction
+//   - assignedBarangayName: string (required, 1-100 chars) - Barangay name
+//   - lat: number (required, -90.0 to 90.0) - Real-time GPS latitude
+//   - lng: number (required, -180.0 to 180.0) - Real-time GPS longitude
+//   - speed: number (optional, 0 to 200) - Telemetry speed in km/h
+//   - heading: number (optional, 0 to 360) - Compass bearing in degrees
+//   - status: string (required, enum: 'IDLE', 'EN_ROUTE', 'PICKING_UP', 'COMPLETED')
+//   - currentStopName: string (required, 1-150 chars) - Current designated stop or route waypoint
+//   - wasteStream: string (required, 1-50 chars) - Active waste stream (e.g. "Biodegradable", "Recyclable", "Residual")
+//   - updatedAt: string (required, 1-50 chars) - Human-readable telemetry update time
+//   - lastUpdatedEpoch: number or timestamp (required) - Milliseconds epoch or timestamp of last telemetry ping
+//
+// Collection: collection_pits
+// Document ID: {pitId} (e.g., "pit_01")
+// Fields:
+//   - name: string (required, 2-100 chars) - Name of designated community collection bin or depot
+//   - barangayId: string (required, 1-50 chars) - Barangay jurisdiction
+//   - purok: string (required, 1-50 chars) - Specific purok or sitio location
+//   - lat: number (required, -90.0 to 90.0) - Bin GPS latitude coordinate
+//   - lng: number (required, -180.0 to 180.0) - Bin GPS longitude coordinate
+//   - status: string (required, enum: 'PENDING', 'COLLECTING_NOW', 'COMPLETED')
+//   - wasteCategory: string (required, 1-50 chars) - Targeted waste category under RA 9003
+//   - estimatedVolume: string (required, 1-50 chars) - Estimated volume (e.g., "120 kg")
+//
+// Collection: waste_logs
+// Document ID: {logId}
+// Fields:
+//   - stopId: string (required, 1-64 chars, immutable) - Reference ID of collection pit or stop
+//   - stopName: string (required, 1-150 chars) - Name of collection pit or stop
+//   - barangayId: string (required, 1-50 chars) - Barangay jurisdiction
+//   - barangayName: string (required, 1-100 chars) - Name of barangay
+//   - collectorId: string (required, 1-64 chars, immutable) - Logging collector identifier
+//   - collectorName: string (required, 1-100 chars) - Logging collector full name
+//   - truckPlate: string (required, 3-20 chars) - Truck plate used for haulage
+//   - wasteCategory: string (required, enum: 'BIODEGRADABLE', 'RECYCLABLE', 'RESIDUAL', 'SPECIAL')
+//   - weightKg: number (required, 0 to 50000) - Measured weight in kilograms
+//   - bagCount: number (required, 0 to 1000) - Sacks or bins collected
+//   - notes: string (optional, 0-500 chars) - Operational notes or observations
+//   - refusalReason: string (optional, 0-300 chars) - Non-collection refusal justification under RA 9003
+//   - timestamp: number or timestamp (required, immutable) - Exact log timestamp
+//   - dateString: string (required, 1-50 chars) - Formatted date string
+//
 // ===============================================================
 
 service cloud.firestore {
@@ -310,6 +371,71 @@ service cloud.firestore {
         (!('details' in data) || data.details is map);
     }
 
+    function isValidCollector(data) {
+      return hasRequiredFields(data, ['employeeId', 'fullName', 'phone', 'assignedBarangayId', 'assignedBarangayName', 'assignedTruckPlate', 'pin', 'status', 'createdAt']) &&
+        hasOnlyAllowedFields(data, ['employeeId', 'fullName', 'phone', 'assignedBarangayId', 'assignedBarangayName', 'assignedTruckPlate', 'pin', 'status', 'createdAt', 'lastActiveEpoch']) &&
+        data.employeeId is string && data.employeeId.size() >= 3 && data.employeeId.size() <= 50 &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 20 &&
+        data.assignedBarangayId is string && data.assignedBarangayId.size() >= 1 && data.assignedBarangayId.size() <= 50 &&
+        data.assignedBarangayName is string && data.assignedBarangayName.size() >= 1 && data.assignedBarangayName.size() <= 100 &&
+        data.assignedTruckPlate is string && data.assignedTruckPlate.size() >= 3 && data.assignedTruckPlate.size() <= 20 &&
+        data.pin is string && data.pin.size() >= 4 && data.pin.size() <= 12 &&
+        data.status in ['ACTIVE', 'INACTIVE', 'ON_DUTY'] &&
+        ((data.createdAt is number && data.createdAt > 0) || data.createdAt is timestamp) &&
+        (!('lastActiveEpoch' in data) || (data.lastActiveEpoch is number && data.lastActiveEpoch > 0) || data.lastActiveEpoch is timestamp);
+    }
+
+    function isValidTruck(data) {
+      return hasRequiredFields(data, ['driverName', 'plateNumber', 'assignedBarangayId', 'assignedBarangayName', 'lat', 'lng', 'status', 'currentStopName', 'wasteStream', 'updatedAt', 'lastUpdatedEpoch']) &&
+        hasOnlyAllowedFields(data, ['driverName', 'plateNumber', 'assignedBarangayId', 'assignedBarangayName', 'lat', 'lng', 'speed', 'heading', 'status', 'currentStopName', 'wasteStream', 'updatedAt', 'lastUpdatedEpoch']) &&
+        data.driverName is string && data.driverName.size() >= 2 && data.driverName.size() <= 100 &&
+        data.plateNumber is string && data.plateNumber.size() >= 3 && data.plateNumber.size() <= 20 &&
+        data.assignedBarangayId is string && data.assignedBarangayId.size() >= 1 && data.assignedBarangayId.size() <= 50 &&
+        data.assignedBarangayName is string && data.assignedBarangayName.size() >= 1 && data.assignedBarangayName.size() <= 100 &&
+        data.lat is number && data.lat >= -90.0 && data.lat <= 90.0 &&
+        data.lng is number && data.lng >= -180.0 && data.lng <= 180.0 &&
+        (!('speed' in data) || (data.speed is number && data.speed >= 0 && data.speed <= 200)) &&
+        (!('heading' in data) || (data.heading is number && data.heading >= 0 && data.heading <= 360)) &&
+        data.status in ['IDLE', 'EN_ROUTE', 'PICKING_UP', 'COMPLETED'] &&
+        data.currentStopName is string && data.currentStopName.size() >= 1 && data.currentStopName.size() <= 150 &&
+        data.wasteStream is string && data.wasteStream.size() >= 1 && data.wasteStream.size() <= 50 &&
+        data.updatedAt is string && data.updatedAt.size() >= 1 && data.updatedAt.size() <= 50 &&
+        ((data.lastUpdatedEpoch is number && data.lastUpdatedEpoch > 0) || data.lastUpdatedEpoch is timestamp);
+    }
+
+    function isValidCollectionPit(data) {
+      return hasRequiredFields(data, ['name', 'barangayId', 'purok', 'lat', 'lng', 'status', 'wasteCategory', 'estimatedVolume']) &&
+        hasOnlyAllowedFields(data, ['name', 'barangayId', 'purok', 'lat', 'lng', 'status', 'wasteCategory', 'estimatedVolume']) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+        data.barangayId is string && data.barangayId.size() >= 1 && data.barangayId.size() <= 50 &&
+        data.purok is string && data.purok.size() >= 1 && data.purok.size() <= 50 &&
+        data.lat is number && data.lat >= -90.0 && data.lat <= 90.0 &&
+        data.lng is number && data.lng >= -180.0 && data.lng <= 180.0 &&
+        data.status in ['PENDING', 'COLLECTING_NOW', 'COMPLETED'] &&
+        data.wasteCategory is string && data.wasteCategory.size() >= 1 && data.wasteCategory.size() <= 50 &&
+        data.estimatedVolume is string && data.estimatedVolume.size() >= 1 && data.estimatedVolume.size() <= 50;
+    }
+
+    function isValidWasteLog(data) {
+      return hasRequiredFields(data, ['stopId', 'stopName', 'barangayId', 'barangayName', 'collectorId', 'collectorName', 'truckPlate', 'wasteCategory', 'weightKg', 'bagCount', 'timestamp', 'dateString']) &&
+        hasOnlyAllowedFields(data, ['stopId', 'stopName', 'barangayId', 'barangayName', 'collectorId', 'collectorName', 'truckPlate', 'wasteCategory', 'weightKg', 'bagCount', 'notes', 'refusalReason', 'timestamp', 'dateString']) &&
+        data.stopId is string && data.stopId.size() >= 1 && data.stopId.size() <= 64 &&
+        data.stopName is string && data.stopName.size() >= 1 && data.stopName.size() <= 150 &&
+        data.barangayId is string && data.barangayId.size() >= 1 && data.barangayId.size() <= 50 &&
+        data.barangayName is string && data.barangayName.size() >= 1 && data.barangayName.size() <= 100 &&
+        data.collectorId is string && data.collectorId.size() >= 1 && data.collectorId.size() <= 64 &&
+        data.collectorName is string && data.collectorName.size() >= 1 && data.collectorName.size() <= 100 &&
+        data.truckPlate is string && data.truckPlate.size() >= 3 && data.truckPlate.size() <= 20 &&
+        data.wasteCategory in ['BIODEGRADABLE', 'RECYCLABLE', 'RESIDUAL', 'SPECIAL'] &&
+        data.weightKg is number && data.weightKg >= 0 && data.weightKg <= 50000 &&
+        data.bagCount is number && data.bagCount >= 0 && data.bagCount <= 1000 &&
+        isValidOptionalString(data, 'notes', 0, 500) &&
+        isValidOptionalString(data, 'refusalReason', 0, 300) &&
+        ((data.timestamp is number && data.timestamp > 0) || data.timestamp is timestamp) &&
+        data.dateString is string && data.dateString.size() >= 1 && data.dateString.size() <= 50;
+    }
+
     // ===============================================================
     // Collection Security Rules
     // ===============================================================
@@ -481,6 +607,95 @@ service cloud.firestore {
 
       allow update: if false;
       allow delete: if false;
+    }
+
+    // 7. Collectors Collection
+    // Admin-provisioned field worker accounts.
+    // Philippine Data Privacy Act (RA 10173): Collector phone numbers and authentication PINs
+    // are confidential and restricted to municipal administrators and the specific collector.
+    // Self-registration is strictly disabled to prevent unauthorized fleet accounts.
+    match /collectors/{collectorId} {
+      allow read: if isAnyAdmin()
+        || isCollector()
+        || (isAuthenticated() && request.auth.uid == collectorId);
+
+      allow create: if isAnyAdmin() && isValidCollector(request.resource.data);
+
+      allow update: if isValidCollector(request.resource.data) && (
+        isAnyAdmin() ||
+        (
+          isCollector() &&
+          request.auth.uid == collectorId &&
+          areImmutableFieldsUnchanged(['employeeId', 'fullName', 'phone', 'assignedBarangayId', 'assignedBarangayName', 'assignedTruckPlate', 'pin', 'createdAt'])
+        )
+      );
+
+      allow delete: if isAnyAdmin();
+    }
+
+    // 8. Trucks Collection
+    // Live fleet telemetry streamed from collector GPS.
+    // Transparently readable by citizens, residents, and the public for OpenStreetMap live truck tracking.
+    // Updates restricted to assigned collectors streaming GPS/status and municipal administrators.
+    match /trucks/{truckId} {
+      allow read: if true;
+
+      allow create: if isValidTruck(request.resource.data) && (
+        isAnyAdmin() ||
+        isCollector()
+      );
+
+      allow update: if isValidTruck(request.resource.data) && (
+        isAnyAdmin() ||
+        (
+          isCollector() &&
+          areImmutableFieldsUnchanged(['plateNumber'])
+        )
+      );
+
+      allow delete: if isAnyAdmin();
+    }
+
+    // 9. Collection Pits Collection
+    // Designated community waste bins and drop-off points under RA 9003.
+    // Publicly readable for citizen routing and OpenStreetMap display.
+    // Collectors may only update operational collection status (e.g. marking COLLECTING_NOW, COMPLETED).
+    // Municipal admins maintain full provisioning and configuration rights.
+    match /collection_pits/{pitId} {
+      allow read: if true;
+
+      allow create: if isAnyAdmin() && isValidCollectionPit(request.resource.data);
+
+      allow update: if isValidCollectionPit(request.resource.data) && (
+        isAnyAdmin() ||
+        (
+          isCollector() &&
+          areImmutableFieldsUnchanged(['name', 'barangayId', 'purok', 'lat', 'lng', 'wasteCategory', 'estimatedVolume']) &&
+          request.resource.data.status in ['PENDING', 'COLLECTING_NOW', 'COMPLETED']
+        )
+      );
+
+      allow delete: if isAnyAdmin();
+    }
+
+    // 10. Waste Logs Collection
+    // Official municipal waste manifests and non-collection refusal logs under RA 9003.
+    // Accessible by MENRO Admins and Collectors for operational compliance and audit reports.
+    // Collectors can create entries (logging waste weight, sacks, or RA 9003 non-segregation refusals).
+    // Audit protection: updates restricted to administrators with immutable critical audit fields.
+    match /waste_logs/{logId} {
+      allow read: if isAnyAdmin() || isCollector();
+
+      allow create: if isValidWasteLog(request.resource.data) && (
+        isAnyAdmin() ||
+        isCollector()
+      );
+
+      allow update: if isAnyAdmin() &&
+        isValidWasteLog(request.resource.data) &&
+        areImmutableFieldsUnchanged(['stopId', 'collectorId', 'timestamp']);
+
+      allow delete: if isSysAdmin();
     }
 
     // Default Deny Rule: All unmatched paths are strictly denied

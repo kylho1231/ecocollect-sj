@@ -1,0 +1,24 @@
+{
+  "name": "EcoCollect SJ: Smart Municipal Waste Management",
+  "short_name": "EcoCollect SJ",
+  "description": "Smart and Centralized Waste Collection, Tracking, and Scheduling System for San Jose de Buenavista, Antique",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#147D64",
+  "theme_color": "#147D64",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

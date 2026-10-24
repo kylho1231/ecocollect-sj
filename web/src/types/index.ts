@@ -53,4 +53,67 @@ export interface OperationalMetrics {
   pendingScheduleVerifications: number;
   openComplaints: number;
   verifiedBarangaysCount: number;
+  totalWasteCollectedKg: number;
 }
+
+export interface CollectorAccount {
+  id: string;
+  employeeId: string;
+  fullName: string;
+  phone: string;
+  assignedBarangayId: string;
+  assignedBarangayName: string;
+  assignedTruckPlate: string;
+  pin: string;
+  status: "ACTIVE" | "INACTIVE" | "ON_DUTY";
+  createdAt: number;
+  lastActiveEpoch?: number;
+}
+
+export interface TruckTelemetry {
+  id: string;
+  driverName: string;
+  plateNumber: string;
+  assignedBarangayId: string;
+  assignedBarangayName: string;
+  lat: number;
+  lng: number;
+  speed?: number;
+  heading?: number;
+  status: "IDLE" | "EN_ROUTE" | "PICKING_UP" | "COMPLETED";
+  currentStopName: string;
+  wasteStream: string;
+  updatedAt: string;
+  lastUpdatedEpoch: number;
+}
+
+export interface CollectionPit {
+  id: string;
+  name: string;
+  barangayId: string;
+  purok: string;
+  lat: number;
+  lng: number;
+  status: "PENDING" | "COLLECTING_NOW" | "COMPLETED";
+  wasteCategory: string;
+  estimatedVolume: string;
+}
+
+export interface WasteLogEntry {
+  id: string;
+  stopId: string;
+  stopName: string;
+  barangayId: string;
+  barangayName: string;
+  collectorId: string;
+  collectorName: string;
+  truckPlate: string;
+  wasteCategory: WasteCategory;
+  weightKg: number;
+  bagCount: number;
+  notes?: string;
+  refusalReason?: string;
+  timestamp: number;
+  dateString: string;
+}
+

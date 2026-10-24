@@ -150,6 +150,90 @@ export default function PublicPortalPage() {
 
       {/* Main Content Area */}
       <main className="max-w-6xl mx-auto px-6 py-10 flex-1 w-full space-y-8">
+        {/* 3 High-Impact Modern Application Access Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Card 1: Citizen PWA */}
+          <Link
+            href="/resident"
+            className="group bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
+                📱
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base font-extrabold text-[#11263A] group-hover:text-[#147D64] transition">
+                  Citizen PWA
+                </h3>
+                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                  MOBILE
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed mb-4">
+                Real-time OpenStreetMap tracking of garbage trucks, community waste pits, schedule alerts, and secure AI government ID verification.
+              </p>
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold text-[#147D64] pt-3 border-t border-slate-100">
+              <span>Open Citizen App</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition" />
+            </div>
+          </Link>
+
+          {/* Card 2: Collector PWA */}
+          <Link
+            href="/collector/login"
+            className="group bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all flex flex-col justify-between text-slate-100"
+          >
+            <div>
+              <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition border border-emerald-500/20">
+                🚛
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base font-extrabold text-white group-hover:text-emerald-400 transition">
+                  Collector Field PWA
+                </h3>
+                <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">
+                  CREW ONLY
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Admin-provisioned login, continuous GPS telemetry streaming to HQ, assigned route stops, waste volume logging, and refusal reporting.
+              </p>
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold text-emerald-400 pt-3 border-t border-slate-800">
+              <span>Collector Shift Login</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition" />
+            </div>
+          </Link>
+
+          {/* Card 3: MENRO Command Dashboard */}
+          <Link
+            href="/admin/dashboard"
+            className="group bg-gradient-to-br from-[#11263A] to-slate-900 rounded-3xl p-6 border border-slate-700 shadow-sm hover:shadow-xl hover:border-emerald-400 transition-all flex flex-col justify-between text-white"
+          >
+            <div>
+              <div className="w-12 h-12 bg-sky-500/10 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition border border-sky-500/20">
+                🛰️
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base font-extrabold text-white group-hover:text-sky-300 transition">
+                  MENRO Command Center
+                </h3>
+                <span className="text-[10px] font-bold bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full border border-sky-500/30">
+                  ADMIN
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed mb-4">
+                Monitor fleet GPS in real time on OpenStreetMap, assign collectors to barangays, provision crew accounts, and generate official waste manifests.
+              </p>
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold text-sky-300 pt-3 border-t border-slate-700/80">
+              <span>Access Command Center</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition" />
+            </div>
+          </Link>
+        </div>
+
         {/* Pilot Disclosure Alert */}
         <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/80 text-amber-900 flex items-start space-x-3 shadow-sm backdrop-blur-sm">
           <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
