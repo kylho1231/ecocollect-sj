@@ -58,9 +58,7 @@ export default function PublicPortalPage() {
       <header className="bg-[#147D64] text-white py-4 px-6 shadow-md">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <div className="bg-white/20 p-2 rounded-lg">
-              <Truck className="h-6 w-6 text-white" />
-            </div>
+            <img src="/icon.svg" alt="EcoCollect SJ Logo" className="h-10 w-10 rounded-xl shadow-sm bg-white p-0.5" />
             <div>
               <h1 className="text-xl font-bold tracking-tight">EcoCollect SJ</h1>
               <p className="text-xs text-white/80">

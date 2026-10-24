@@ -113,9 +113,7 @@ export default function AdminDashboardPage() {
       {/* Admin Nav */}
       <nav className="bg-[#11263A] text-white px-6 py-4 flex justify-between items-center shadow-lg">
         <div className="flex items-center space-x-3">
-          <div className="bg-[#147D64] p-2 rounded-lg">
-            <Building className="h-6 w-6 text-white" />
-          </div>
+          <img src="/icon.svg" alt="EcoCollect SJ Logo" className="h-10 w-10 rounded-xl shadow-sm bg-white p-0.5" />
           <div>
             <h1 className="text-lg font-bold tracking-tight">EcoCollect SJ — MENRO Administration</h1>
             <p className="text-xs text-slate-300">San Jose de Buenavista Municipal Environment Office</p>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Circular recycling tracking path -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,28 A26,26 0 0,1 80,54 C80,64 74,72 65,77" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62,70 L68,82 L55,82 Z" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,80 A26,26 0 0,1 28,54 C28,44 34,36 43,31" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,38 L40,26 L53,26 Z" />
+
+    <!-- Center Ecological Leaf -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,36 C64,42 68,52 62,62 C57,72 47,68 44,62 C40,54 46,38 54,36 Z" />
+
+    <!-- Leaf Vein / Route Node -->
+    <path
+        android:strokeColor="#147D64"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M48,62 Q54,52 58,44" />
+
+    <!-- GPS Tracking Waypoint Node -->
+    <path
+        android:fillColor="#147D64"
+        android:pathData="M55,52 A3,3 0 1,1 55,51.99 Z" />
+</vector>

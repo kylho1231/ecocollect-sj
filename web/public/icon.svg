@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="50" y1="30" x2="460" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1EA886" />
+      <stop offset="60%" stop-color="#147D64" />
+      <stop offset="100%" stop-color="#0C5241" />
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow -->
+    <filter id="dropShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0C5241" flood-opacity="0.3" />
+    </filter>
+
+    <!-- Inner Glow -->
+    <linearGradient id="leafGlow" x1="200" y1="160" x2="312" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#EAF7F0" />
+    </linearGradient>
+  </defs>
+
+  <!-- App Icon Squircle Base -->
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Outer Tracking / Circulation Ring (with Shadow) -->
+  <g filter="url(#dropShadow)">
+    <!-- Clockwise Flow Upper Arc -->
+    <path d="M 256 120 A 136 136 0 0 1 392 256 C 392 306 360 350 318 374" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" fill="none" opacity="0.95" />
+    <!-- Upper Arrow Head -->
+    <polygon points="304,342 334,394 280,394" fill="#FFFFFF" />
+
+    <!-- Clockwise Flow Lower Arc -->
+    <path d="M 256 392 A 136 136 0 0 1 120 256 C 120 206 152 162 194 138" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" fill="none" opacity="0.95" />
+    <!-- Lower Arrow Head -->
+    <polygon points="208,170 178,118 232,118" fill="#FFFFFF" />
+  </g>
+
+  <!-- Center Ecological Leaf with Integrated Location Pin -->
+  <g transform="translate(0, 0)">
+    <!-- Leaf Body -->
+    <path d="M 256 168 C 308 194 336 244 310 298 C 284 350 228 326 216 298 C 192 258 218 180 256 168 Z" fill="url(#leafGlow)" />
+    
+    <!-- Leaf Center Stem / Dynamic Routing Line -->
+    <path d="M 228 298 Q 256 248 280 208" stroke="#147D64" stroke-width="12" stroke-linecap="round" fill="none" />
+    
+    <!-- Central Smart GPS Waypoint Node -->
+    <circle cx="262" cy="254" r="15" fill="#147D64" />
+    <circle cx="262" cy="254" r="7" fill="#EAF7F0" />
+  </g>
+
+  <!-- Municipal Emblem Initials "SJ" at Bottom Center -->
+  <rect x="216" y="420" width="80" height="24" rx="12" fill="#FFFFFF" opacity="0.2" />
+  <text x="256" y="437" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">
+    SAN JOSE
+  </text>
+</svg>
