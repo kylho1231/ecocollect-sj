@@ -1,0 +1,491 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// This security rules file assumes the following data structures for EcoCollect SJ
+// (Smart Waste Collection, Tracking, Scheduling, and Management System in San Jose de Buenavista, Antique):
+//
+// Collection: users
+// Document ID: {userId} (matches Firebase Auth UID)
+// Fields:
+//   - uid: string (required, 1-128 chars, immutable) - Firebase Auth UID
+//   - email: string (required, valid email, max 100 chars) - Resident or personnel email
+//   - fullName: string (required, 2-100 chars) - Official legal name
+//   - phoneNumber: string (optional, 7-20 chars) - Contact number (Confidential PII under RA 10173)
+//   - barangayId: string (required, 1-50 chars) - Barangay jurisdiction in San Jose de Buenavista
+//   - address: string (optional, 3-200 chars) - Resident home address (Confidential PII under RA 10173)
+//   - role: string (required, enum: 'resident', 'collector', 'barangay_official', 'menro_admin', 'sys_admin')
+//   - createdAt: timestamp (required, immutable) - Document creation time
+//   - updatedAt: timestamp (required) - Last profile modification time
+//
+// Collection: collection_schedules
+// Document ID: {scheduleId} (e.g., alphanumeric string)
+// Fields:
+//   - scheduleId: string (required, 1-64 chars, immutable) - Unique schedule identifier
+//   - barangayId: string (required, 1-50 chars) - Barangay ID within San Jose de Buenavista
+//   - wasteType: string (required, enum: 'biodegradable', 'residual', 'recyclable', 'special', 'bulky', 'all')
+//   - dayOfWeek: list of strings (optional, max 7 items) - Designated collection days
+//   - collectionTime: string (required, 1-100 chars) - Collection window (e.g. "06:00 - 09:00")
+//   - routeDescription: string (required, 3-500 chars) - Streets, sitios, or zones covered
+//   - verificationStatus: string (required, enum: 'DRAFT', 'PENDING_VERIFICATION', 'VERIFIED', 'REJECTED')
+//   - officialReference: string (optional, required if VERIFIED, 3-100 chars) - MENRO executive order or memo reference
+//   - verifiedTimestamp: timestamp (optional, required if VERIFIED) - When MENRO approved schedule
+//   - verifiedByUid: string (optional, required if VERIFIED, 1-128 chars) - MENRO administrator UID
+//   - createdTimestamp: timestamp (required, immutable) - Record creation time
+//   - updatedTimestamp: timestamp (required) - Last schedule update time
+//   - createdByUid: string (required, 1-128 chars, immutable) - Creator UID (Barangay Official or MENRO Admin)
+//
+// Collection: collection_jobs
+// Document ID: {jobId}
+// Fields:
+//   - jobId: string (required, 1-64 chars, immutable) - Scheduled run identifier
+//   - scheduleId: string (required, 1-64 chars, immutable) - Parent schedule ID
+//   - barangayId: string (required, 1-50 chars, immutable) - Barangay ID
+//   - assignedCrewId: string (required, 1-64 chars, immutable) - Waste collection crew ID
+//   - assignedCollectorUid: string (required, 1-128 chars, immutable) - Lead garbage collector UID
+//   - truckPlateNumber: string (required, 3-20 chars, immutable) - Assigned compactor/dump truck plate
+//   - jobDate: string (optional, max 50 chars) - Service date representation
+//   - status: string (required, enum: 'SCHEDULED', 'DISPATCHED', 'IN_PROGRESS', 'COMPLETED', 'DELAYED', 'CANCELLED')
+//   - completionNotes: string (optional, max 500 chars) - Crew observations or route issues
+//   - startedAt: timestamp (optional) - Truck dispatch/start time
+//   - completedAt: timestamp (optional) - Route completion time
+//   - createdTimestamp: timestamp (required, immutable)
+//   - updatedTimestamp: timestamp (required)
+//
+// Collection: collection_events
+// Document ID: {eventId}
+// Fields:
+//   - eventId: string (required, 1-64 chars, immutable)
+//   - jobId: string (required, 1-64 chars, immutable)
+//   - crewId: string (required, 1-64 chars, immutable)
+//   - collectorUid: string (required, 1-128 chars, immutable)
+//   - barangayId: string (required, 1-50 chars, immutable)
+//   - eventType: string (required, enum: 'CHECKPOINT_ARRIVED', 'WASTE_COLLECTED', 'ROUTE_OBSTRUCTION', 'BREAKDOWN', 'COMPLETED', 'GPS_PING')
+//   - latitude: number (required, -90.0 to 90.0)
+//   - longitude: number (required, -180.0 to 180.0)
+//   - timestamp: timestamp (required, immutable)
+//   - idempotencyKey: string (required, 8-128 chars, immutable) - Deduplication key for intermittent mobile connectivity
+//   - notes: string (optional, max 300 chars)
+//   - imageUrl: string (optional, valid URL, max 500 chars)
+//
+// Collection: complaints
+// Document ID: {complaintId}
+// Fields:
+//   - complaintId: string (required, 1-64 chars, immutable)
+//   - residentUserId: string (required, 1-128 chars, immutable) - Complainant UID
+//   - complainantName: string (required, 2-100 chars) - Full name of resident (RA 10173 Protected PII)
+//   - complainantPhone: string (required, 7-20 chars) - Phone number (RA 10173 Protected PII)
+//   - barangayId: string (required, 1-50 chars, immutable) - Barangay where incident occurred
+//   - streetAddress: string (required, 3-200 chars) - Specific location/address (RA 10173 Protected PII)
+//   - category: string (required, enum: 'MISSED_COLLECTION', 'ILLEGAL_DUMPING', 'SPILLAGE', 'RUDE_STAFF', 'UNSEGREGATED_WASTE', 'OTHER')
+//   - description: string (required, 5-1000 chars) - Detail of complaint
+//   - photoUrls: list of strings (optional, max 5 URLs) - Evidence photos
+//   - status: string (required, enum: 'SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')
+//   - assignedCrewId: string (optional, max 64 chars) - Assigned response crew
+//   - resolutionNotes: string (optional, max 1000 chars) - Action taken by MENRO or Barangay
+//   - resolvedTimestamp: timestamp (optional) - When marked resolved/closed
+//   - createdTimestamp: timestamp (required, immutable)
+//   - updatedTimestamp: timestamp (required)
+//
+// Collection: audit_logs
+// Document ID: {logId}
+// Fields:
+//   - logId: string (required, 1-64 chars, immutable)
+//   - timestamp: timestamp (required, immutable)
+//   - action: string (required, 2-100 chars, immutable) - System or audit action code
+//   - actorUid: string (required, 1-128 chars, immutable) - User who triggered the action
+//   - actorRole: string (required, 2-50 chars, immutable)
+//   - targetCollection: string (required, 1-50 chars, immutable)
+//   - targetDocId: string (required, 1-64 chars, immutable)
+//   - details: map (optional, max keys and payload bounds)
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the request is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Role-based helper functions (authority derived strictly from request.auth.token claims)
+    function isSysAdmin() {
+      return isAuthenticated() &&
+        (('role' in request.auth.token && request.auth.token.role == 'sys_admin') ||
+         (request.auth.token.email != null && request.auth.token.email.matches(".*@san-jose-menro\\.gov\\.ph$")));
+    }
+
+    function isMenroAdmin() {
+      return isAuthenticated() &&
+        'role' in request.auth.token &&
+        request.auth.token.role == 'menro_admin';
+    }
+
+    function isAnyAdmin() {
+      return isSysAdmin() || isMenroAdmin();
+    }
+
+    function isBarangayOfficial(barangayId) {
+      return isAuthenticated() &&
+        'role' in request.auth.token &&
+        request.auth.token.role == 'barangay_official' &&
+        'barangayId' in request.auth.token &&
+        request.auth.token.barangayId == barangayId;
+    }
+
+    function isCollector() {
+      return isAuthenticated() &&
+        'role' in request.auth.token &&
+        request.auth.token.role == 'collector';
+    }
+
+    function getCrewId() {
+      return isAuthenticated() && 'crewId' in request.auth.token ? request.auth.token.crewId : '';
+    }
+
+    // Schema and Type Safety Helpers
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(data, fields) {
+      return data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() <= 100 &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string &&
+        url.size() <= 500 &&
+        (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isValidOptionalString(data, field, minLen, maxLen) {
+      return !(field in data) ||
+        (data[field] is string &&
+         data[field].size() >= minLen &&
+         data[field].size() <= maxLen);
+    }
+
+    function isValidList(listVal, maxSize) {
+      return listVal is list && listVal.size() <= maxSize;
+    }
+
+    // Schedule verification payload helper
+    function isVerifiedSchedulePayload(data) {
+      return data.verificationStatus == 'VERIFIED' &&
+        ('officialReference' in data) &&
+        data.officialReference is string &&
+        data.officialReference.size() >= 3 &&
+        data.officialReference.size() <= 100 &&
+        ('verifiedTimestamp' in data) &&
+        data.verifiedTimestamp is timestamp &&
+        ('verifiedByUid' in data) &&
+        data.verifiedByUid is string &&
+        data.verifiedByUid.size() >= 1 &&
+        data.verifiedByUid.size() <= 128;
+    }
+
+    // ===============================================================
+    // Domain Validators (Applied to both create and update operations)
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(data, ['uid', 'email', 'fullName', 'barangayId', 'role', 'createdAt', 'updatedAt']) &&
+        hasOnlyAllowedFields(data, ['uid', 'email', 'fullName', 'phoneNumber', 'barangayId', 'address', 'role', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        isValidEmail(data.email) &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
+        isValidOptionalString(data, 'phoneNumber', 7, 20) &&
+        data.barangayId is string && data.barangayId.size() >= 1 && data.barangayId.size() <= 50 &&
+        isValidOptionalString(data, 'address', 3, 200) &&
+        data.role in ['resident', 'collector', 'barangay_official', 'menro_admin', 'sys_admin'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSchedule(data) {
+      return hasRequiredFields(data, ['scheduleId', 'barangayId', 'wasteType', 'collectionTime', 'routeDescription', 'verificationStatus', 'createdTimestamp', 'updatedTimestamp', 'createdByUid']) &&
+        hasOnlyAllowedFields(data, ['scheduleId', 'barangayId', 'wasteType', 'dayOfWeek', 'collectionTime', 'routeDescription', 'verificationStatus', 'officialReference', 'verifiedTimestamp', 'verifiedByUid', 'createdTimestamp', 'updatedTimestamp', 'createdByUid']) &&
+        data.scheduleId is string && data.scheduleId.size() >= 1 && data.scheduleId.size() <= 64 &&
+        data.barangayId is string && data.barangayId.size() >= 1 && data.barangayId.size() <= 50 &&
+        data.wasteType in ['biodegradable', 'residual', 'recyclable', 'special', 'bulky', 'all'] &&
+        (!('dayOfWeek' in data) || (data.dayOfWeek is list && isValidList(data.dayOfWeek, 7))) &&
+        data.collectionTime is string && data.collectionTime.size() >= 1 && data.collectionTime.size() <= 100 &&
+        data.routeDescription is string && data.routeDescription.size() >= 3 && data.routeDescription.size() <= 500 &&
+        data.verificationStatus in ['DRAFT', 'PENDING_VERIFICATION', 'VERIFIED', 'REJECTED'] &&
+        isValidOptionalString(data, 'officialReference', 0, 100) &&
+        (!('verifiedTimestamp' in data) || data.verifiedTimestamp is timestamp) &&
+        isValidOptionalString(data, 'verifiedByUid', 0, 128) &&
+        data.createdTimestamp is timestamp &&
+        data.updatedTimestamp is timestamp &&
+        data.createdByUid is string && data.createdByUid.size() >= 1 && data.createdByUid.size() <= 128;
+    }
+
+    function isValidJob(data) {
+      return hasRequiredFields(data, ['jobId', 'scheduleId', 'barangayId', 'assignedCrewId', 'assignedCollectorUid', 'truckPlateNumber', 'status', 'createdTimestamp', 'updatedTimestamp']) &&
+        hasOnlyAllowedFields(data, ['jobId', 'scheduleId', 'barangayId', 'assignedCrewId', 'assignedCollectorUid', 'truckPlateNumber', 'jobDate', 'status', 'completionNotes', 'startedAt', 'completedAt', 'createdTimestamp', 'updatedTimestamp']) &&
+        data.jobId is string && data.jobId.size() >= 1 && data.jobId.size() <= 64 &&
+        data.scheduleId is string && data.scheduleId.size() >= 1 && data.scheduleId.size() <= 64 &&
+        data.barangayId is string && data.barangayId.size() >= 1 && data.barangayId.size() <= 50 &&
+        data.assignedCrewId is string && data.assignedCrewId.size() >= 1 && data.assignedCrewId.size() <= 64 &&
+        data.assignedCollectorUid is string && data.assignedCollectorUid.size() >= 1 && data.assignedCollectorUid.size() <= 128 &&
+        data.truckPlateNumber is string && data.truckPlateNumber.size() >= 3 && data.truckPlateNumber.size() <= 20 &&
+        isValidOptionalString(data, 'jobDate', 0, 50) &&
+        data.status in ['SCHEDULED', 'DISPATCHED', 'IN_PROGRESS', 'COMPLETED', 'DELAYED', 'CANCELLED'] &&
+        isValidOptionalString(data, 'completionNotes', 0, 500) &&
+        (!('startedAt' in data) || data.startedAt is timestamp) &&
+        (!('completedAt' in data) || data.completedAt is timestamp) &&
+        data.createdTimestamp is timestamp &&
+        data.updatedTimestamp is timestamp;
+    }
+
+    function isValidEvent(data) {
+      return hasRequiredFields(data, ['eventId', 'jobId', 'crewId', 'collectorUid', 'barangayId', 'eventType', 'latitude', 'longitude', 'timestamp', 'idempotencyKey']) &&
+        hasOnlyAllowedFields(data, ['eventId', 'jobId', 'crewId', 'collectorUid', 'barangayId', 'eventType', 'latitude', 'longitude', 'timestamp', 'idempotencyKey', 'notes', 'imageUrl']) &&
+        data.eventId is string && data.eventId.size() >= 1 && data.eventId.size() <= 64 &&
+        data.jobId is string && data.jobId.size() >= 1 && data.jobId.size() <= 64 &&
+        data.crewId is string && data.crewId.size() >= 1 && data.crewId.size() <= 64 &&
+        data.collectorUid is string && data.collectorUid.size() >= 1 && data.collectorUid.size() <= 128 &&
+        data.barangayId is string && data.barangayId.size() >= 1 && data.barangayId.size() <= 50 &&
+        data.eventType in ['CHECKPOINT_ARRIVED', 'WASTE_COLLECTED', 'ROUTE_OBSTRUCTION', 'BREAKDOWN', 'COMPLETED', 'GPS_PING'] &&
+        data.latitude is number && data.latitude >= -90.0 && data.latitude <= 90.0 &&
+        data.longitude is number && data.longitude >= -180.0 && data.longitude <= 180.0 &&
+        data.timestamp is timestamp &&
+        data.idempotencyKey is string && data.idempotencyKey.size() >= 8 && data.idempotencyKey.size() <= 128 &&
+        isValidOptionalString(data, 'notes', 0, 300) &&
+        (!('imageUrl' in data) || isValidUrl(data.imageUrl));
+    }
+
+    function isValidComplaint(data) {
+      return hasRequiredFields(data, ['complaintId', 'residentUserId', 'complainantName', 'complainantPhone', 'barangayId', 'streetAddress', 'category', 'description', 'status', 'createdTimestamp', 'updatedTimestamp']) &&
+        hasOnlyAllowedFields(data, ['complaintId', 'residentUserId', 'complainantName', 'complainantPhone', 'barangayId', 'streetAddress', 'category', 'description', 'photoUrls', 'status', 'assignedCrewId', 'resolutionNotes', 'resolvedTimestamp', 'createdTimestamp', 'updatedTimestamp']) &&
+        data.complaintId is string && data.complaintId.size() >= 1 && data.complaintId.size() <= 64 &&
+        data.residentUserId is string && data.residentUserId.size() >= 1 && data.residentUserId.size() <= 128 &&
+        data.complainantName is string && data.complainantName.size() >= 2 && data.complainantName.size() <= 100 &&
+        data.complainantPhone is string && data.complainantPhone.size() >= 7 && data.complainantPhone.size() <= 20 &&
+        data.barangayId is string && data.barangayId.size() >= 1 && data.barangayId.size() <= 50 &&
+        data.streetAddress is string && data.streetAddress.size() >= 3 && data.streetAddress.size() <= 200 &&
+        data.category in ['MISSED_COLLECTION', 'ILLEGAL_DUMPING', 'SPILLAGE', 'RUDE_STAFF', 'UNSEGREGATED_WASTE', 'OTHER'] &&
+        data.description is string && data.description.size() >= 5 && data.description.size() <= 1000 &&
+        (!('photoUrls' in data) || (data.photoUrls is list && isValidList(data.photoUrls, 5))) &&
+        data.status in ['SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'] &&
+        isValidOptionalString(data, 'assignedCrewId', 0, 64) &&
+        isValidOptionalString(data, 'resolutionNotes', 0, 1000) &&
+        (!('resolvedTimestamp' in data) || data.resolvedTimestamp is timestamp) &&
+        data.createdTimestamp is timestamp &&
+        data.updatedTimestamp is timestamp;
+    }
+
+    function isValidAuditLog(data) {
+      return hasRequiredFields(data, ['logId', 'timestamp', 'action', 'actorUid', 'actorRole', 'targetCollection', 'targetDocId']) &&
+        hasOnlyAllowedFields(data, ['logId', 'timestamp', 'action', 'actorUid', 'actorRole', 'targetCollection', 'targetDocId', 'details']) &&
+        data.logId is string && data.logId.size() >= 1 && data.logId.size() <= 64 &&
+        data.timestamp is timestamp &&
+        data.action is string && data.action.size() >= 2 && data.action.size() <= 100 &&
+        data.actorUid is string && data.actorUid.size() >= 1 && data.actorUid.size() <= 128 &&
+        data.actorRole is string && data.actorRole.size() >= 2 && data.actorRole.size() <= 50 &&
+        data.targetCollection is string && data.targetCollection.size() >= 1 && data.targetCollection.size() <= 50 &&
+        data.targetDocId is string && data.targetDocId.size() >= 1 && data.targetDocId.size() <= 64 &&
+        (!('details' in data) || data.details is map);
+    }
+
+    // ===============================================================
+    // Collection Security Rules
+    // ===============================================================
+
+    // 1. Users Collection
+    // Philippine Data Privacy Act (RA 10173): PII (phone number, home address) is strictly
+    // limited to the document owner and authorized municipal administrators.
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAnyAdmin();
+
+      allow create: if isAuthenticated() &&
+        isOwner(userId) &&
+        isValidUser(request.resource.data) &&
+        request.resource.data.uid == userId &&
+        (
+          (request.resource.data.role == 'resident') ||
+          isAnyAdmin()
+        );
+
+      allow update: if isValidUser(request.resource.data) && (
+        (
+          isOwner(userId) &&
+          request.resource.data.role == resource.data.role &&
+          areImmutableFieldsUnchanged(['uid', 'createdAt'])
+        ) ||
+        isAnyAdmin()
+      );
+
+      allow delete: if isAnyAdmin();
+    }
+
+    // 2. Collection Schedules
+    // Honest Data Verification: General public can ONLY read schedules with verificationStatus == 'VERIFIED'.
+    // Unverified schedules are restricted to Barangay Officials within their barangay and MENRO Admins.
+    // Only MENRO Administrators or SysAdmins can publish or set verificationStatus to 'VERIFIED'.
+    match /collection_schedules/{scheduleId} {
+      allow read: if resource.data.verificationStatus == 'VERIFIED'
+        || isAnyAdmin()
+        || isBarangayOfficial(resource.data.barangayId);
+
+      allow create: if isValidSchedule(request.resource.data) && (
+        (
+          isBarangayOfficial(request.resource.data.barangayId) &&
+          request.resource.data.verificationStatus in ['DRAFT', 'PENDING_VERIFICATION'] &&
+          request.resource.data.createdByUid == request.auth.uid
+        ) ||
+        (
+          isAnyAdmin() &&
+          (
+            request.resource.data.verificationStatus != 'VERIFIED' ||
+            isVerifiedSchedulePayload(request.resource.data)
+          )
+        )
+      );
+
+      allow update: if isValidSchedule(request.resource.data) &&
+        areImmutableFieldsUnchanged(['scheduleId', 'createdTimestamp', 'createdByUid']) && (
+        (
+          isBarangayOfficial(resource.data.barangayId) &&
+          request.resource.data.barangayId == resource.data.barangayId &&
+          request.resource.data.verificationStatus in ['DRAFT', 'PENDING_VERIFICATION'] &&
+          resource.data.verificationStatus != 'VERIFIED'
+        ) ||
+        (
+          isAnyAdmin() &&
+          (
+            request.resource.data.verificationStatus != 'VERIFIED' ||
+            isVerifiedSchedulePayload(request.resource.data)
+          )
+        )
+      );
+
+      allow delete: if isAnyAdmin();
+    }
+
+    // 3. Collection Jobs
+    // Garbage Collectors can only view and update collection jobs assigned to their crew or UID.
+    // Collectors can only update operational status and route progress notes.
+    match /collection_jobs/{jobId} {
+      allow read: if isAnyAdmin()
+        || (isAuthenticated() && isBarangayOfficial(resource.data.barangayId))
+        || (isCollector() && (
+             (getCrewId() != '' && resource.data.assignedCrewId == getCrewId()) ||
+             resource.data.assignedCollectorUid == request.auth.uid
+           ));
+
+      allow create: if isAnyAdmin() && isValidJob(request.resource.data);
+
+      allow update: if isValidJob(request.resource.data) && (
+        isAnyAdmin() ||
+        (
+          isCollector() &&
+          (
+            (getCrewId() != '' && resource.data.assignedCrewId == getCrewId()) ||
+            resource.data.assignedCollectorUid == request.auth.uid
+          ) &&
+          areImmutableFieldsUnchanged(['jobId', 'scheduleId', 'barangayId', 'assignedCrewId', 'assignedCollectorUid', 'truckPlateNumber', 'createdTimestamp']) &&
+          request.resource.data.status in ['IN_PROGRESS', 'COMPLETED', 'DELAYED']
+        )
+      );
+
+      allow delete: if isAnyAdmin();
+    }
+
+    // 4. Collection Events
+    // Telemetry and pickup checkpoints: Append-only with mandatory idempotencyKey.
+    // Cannot be overwritten or deleted by collectors to prevent tampering with service logs.
+    match /collection_events/{eventId} {
+      allow read: if isAnyAdmin()
+        || (isAuthenticated() && isBarangayOfficial(resource.data.barangayId))
+        || (isCollector() && (
+             (getCrewId() != '' && resource.data.crewId == getCrewId()) ||
+             resource.data.collectorUid == request.auth.uid
+           ));
+
+      allow create: if isValidEvent(request.resource.data) && (
+        isAnyAdmin() ||
+        (
+          isCollector() &&
+          request.resource.data.collectorUid == request.auth.uid &&
+          (getCrewId() == '' || request.resource.data.crewId == getCrewId()) &&
+          request.resource.data.idempotencyKey.size() >= 8
+        )
+      );
+
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // 5. Complaints Collection
+    // Philippine Data Privacy Act (RA 10173): Residents can ONLY read and write their own complaints.
+    // Complainant personal contact info, phone, and address are strictly shielded from public and peers.
+    // Barangay Officials can only inspect and transition complaints within their barangay.
+    // Only MENRO Admins and Barangay Officials can update complaint status to review/progress/resolved stages.
+    match /complaints/{complaintId} {
+      allow read: if (isAuthenticated() && resource.data.residentUserId == request.auth.uid)
+        || isAnyAdmin()
+        || isBarangayOfficial(resource.data.barangayId);
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.residentUserId == request.auth.uid &&
+        request.resource.data.status == 'SUBMITTED' &&
+        isValidComplaint(request.resource.data);
+
+      allow update: if isValidComplaint(request.resource.data) && (
+        (
+          isAuthenticated() &&
+          resource.data.residentUserId == request.auth.uid &&
+          request.resource.data.residentUserId == request.auth.uid &&
+          request.resource.data.status == resource.data.status &&
+          areImmutableFieldsUnchanged(['complaintId', 'residentUserId', 'barangayId', 'status', 'assignedCrewId', 'resolutionNotes', 'resolvedTimestamp', 'createdTimestamp'])
+        ) ||
+        (
+          (isAnyAdmin() || isBarangayOfficial(resource.data.barangayId)) &&
+          areImmutableFieldsUnchanged(['complaintId', 'residentUserId', 'createdTimestamp']) &&
+          request.resource.data.status in ['UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
+        )
+      );
+
+      allow delete: if isSysAdmin();
+    }
+
+    // 6. Audit Logs Collection
+    // Write-only by backend/functions or admin. Immutable: cannot be updated or deleted by any user.
+    match /audit_logs/{logId} {
+      allow read: if isAnyAdmin();
+
+      allow create: if isAnyAdmin() && isValidAuditLog(request.resource.data);
+
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Default Deny Rule: All unmatched paths are strictly denied
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

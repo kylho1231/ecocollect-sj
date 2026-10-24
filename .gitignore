@@ -1,0 +1,26 @@
+# Node & Web dependencies
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Local Environment Variables & Secrets
+.env.local
+.env.*.local
+*.pem
+
+# Android & Gradle
+.gradle/
+**/build/
+*.iml
+.idea/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+*.log

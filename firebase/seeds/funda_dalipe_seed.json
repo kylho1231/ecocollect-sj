@@ -1,0 +1,87 @@
+{
+  "system_info": {
+    "municipality": "San Jose de Buenavista",
+    "province": "Antique",
+    "country": "Philippines",
+    "pilot_barangay": "Funda-Dalipe",
+    "policy": "No Segregation, No Collection (RA 9003)"
+  },
+  "barangays": [
+    {
+      "id": "funda_dalipe",
+      "name": "Funda-Dalipe",
+      "municipality": "San Jose de Buenavista",
+      "isPilot": true,
+      "puroks": [
+        { "id": "fd_centro", "name": "Purok Centro" },
+        { "id": "fd_baybay", "name": "Purok Baybay" },
+        { "id": "fd_crossing", "name": "Purok Crossing" },
+        { "id": "fd_san_pedro_bnd", "name": "Purok Boundary San Pedro" },
+        { "id": "fd_ilaya", "name": "Purok Ilaya" }
+      ]
+    },
+    {
+      "id": "atabay",
+      "name": "Atabay",
+      "municipality": "San Jose de Buenavista",
+      "isPilot": false,
+      "puroks": [
+        { "id": "atabay_purok_1", "name": "Purok 1" },
+        { "id": "atabay_purok_2", "name": "Purok 2" }
+      ]
+    }
+  ],
+  "collection_schedules": [
+    {
+      "id": "sched_fd_bio",
+      "barangayId": "funda_dalipe",
+      "barangayName": "Funda-Dalipe",
+      "wasteCategory": "BIODEGRADABLE",
+      "dayOfWeek": 1,
+      "startTime": "06:00 AM",
+      "endTime": "09:00 AM",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "statusDescription": "Schedule Awaiting Official Confirmation by MENRO San Jose de Buenavista",
+      "notes": "Proposed morning route for food and garden waste."
+    },
+    {
+      "id": "sched_fd_rec",
+      "barangayId": "funda_dalipe",
+      "barangayName": "Funda-Dalipe",
+      "wasteCategory": "RECYCLABLE",
+      "dayOfWeek": 3,
+      "startTime": "06:00 AM",
+      "endTime": "09:00 AM",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "statusDescription": "Schedule Awaiting Official Confirmation by MENRO San Jose de Buenavista",
+      "notes": "Proposed recyclable collection for bottles, cardboard, and tins."
+    },
+    {
+      "id": "sched_fd_res",
+      "barangayId": "funda_dalipe",
+      "barangayName": "Funda-Dalipe",
+      "wasteCategory": "RESIDUAL",
+      "dayOfWeek": 5,
+      "startTime": "06:00 AM",
+      "endTime": "09:00 AM",
+      "verificationStatus": "PENDING_VERIFICATION",
+      "statusDescription": "Schedule Awaiting Official Confirmation by MENRO San Jose de Buenavista",
+      "notes": "Proposed residual non-recyclable solid waste collection."
+    },
+    {
+      "id": "sched_atabay_01",
+      "barangayId": "atabay",
+      "barangayName": "Atabay",
+      "wasteCategory": "BIODEGRADABLE",
+      "dayOfWeek": 2,
+      "startTime": "07:00 AM",
+      "endTime": "10:00 AM",
+      "verificationStatus": "VERIFIED",
+      "officialReference": "MENRO-RES-2026-088",
+      "verifiedByUserId": "menro_officer_01",
+      "verifiedByUserName": "Engr. M. Delgado (MENRO)",
+      "verifiedTimestamp": 1774000000000,
+      "notes": "Official schedule validated per Executive Order No. 12."
+    }
+  ]
+}
