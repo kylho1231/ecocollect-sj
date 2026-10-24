@@ -78,6 +78,7 @@ fun ResidentDashboardScreen(
     onNavigateToReport: () -> Unit,
     onNavigateToGuide: () -> Unit,
     onNavigateToSchedule: () -> Unit,
+    onNavigateToProfile: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -99,6 +100,7 @@ fun ResidentDashboardScreen(
                         EcoTab.GUIDE -> onNavigateToGuide()
                         EcoTab.REPORT -> onNavigateToReport()
                         EcoTab.SCHEDULE -> onNavigateToSchedule()
+                        EcoTab.PROFILE -> onNavigateToProfile()
                         else -> Unit
                     }
                 }

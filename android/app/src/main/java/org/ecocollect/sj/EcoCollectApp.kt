@@ -28,8 +28,16 @@ class EcoCollectApp : Application() {
         instance = this
 
         barangayRepository = BarangayRepositoryImpl()
-        scheduleRepository = ScheduleRepositoryImpl()
-        complaintRepository = ComplaintRepositoryImpl()
+        scheduleRepository = try {
+            FirestoreScheduleRepository()
+        } catch (e: Exception) {
+            ScheduleRepositoryImpl()
+        }
+        complaintRepository = try {
+            FirestoreComplaintRepository()
+        } catch (e: Exception) {
+            ComplaintRepositoryImpl()
+        }
     }
 
     companion object {

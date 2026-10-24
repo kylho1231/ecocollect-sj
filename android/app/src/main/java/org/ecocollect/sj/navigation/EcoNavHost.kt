@@ -10,6 +10,8 @@ import org.ecocollect.sj.data.repository.ComplaintRepository
 import org.ecocollect.sj.feature.complaints.ReportIncidentScreen
 import org.ecocollect.sj.feature.dashboard.ResidentDashboardScreen
 import org.ecocollect.sj.feature.dashboard.ResidentDashboardViewModel
+import org.ecocollect.sj.feature.profile.ProfileScreen
+import org.ecocollect.sj.feature.schedule.ScheduleScreen
 import org.ecocollect.sj.feature.segregation.SegregationGuideScreen
 
 @Composable
@@ -29,7 +31,15 @@ fun EcoNavHost(
                 viewModel = dashboardViewModel,
                 onNavigateToReport = { navController.navigate(Screen.ReportIncident.route) },
                 onNavigateToGuide = { navController.navigate(Screen.SegregationGuide.route) },
-                onNavigateToSchedule = { /* Schedule tab view */ }
+                onNavigateToSchedule = { navController.navigate(Screen.Schedule.route) },
+                onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
+            )
+        }
+
+        composable(Screen.Schedule.route) {
+            ScheduleScreen(
+                viewModel = dashboardViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -44,6 +54,13 @@ fun EcoNavHost(
                 complaintRepository = complaintRepository,
                 barangayId = dashboardViewModel.uiState.value.selectedBarangay.id,
                 purokId = dashboardViewModel.uiState.value.selectedPurok?.id ?: "fd_centro",
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                currentBarangayName = dashboardViewModel.uiState.value.selectedBarangay.name,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
